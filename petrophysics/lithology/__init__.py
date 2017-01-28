@@ -1,10 +1,11 @@
-from .lithology import m,n,romaa,dtmaa,umaa
+from .lithology import m,n,romaa,dtmaa,umaa,ur_lith
 
 __all__ = ['m',
            'n',
            'romaa',
            'dtmaa',
-           'umaa'
+           'umaa',
+           'ur_lith',
            ]
 
 

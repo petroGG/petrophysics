@@ -5,6 +5,7 @@ n - lithology identifier N
 ro_maa - apparent matrix density
 dtmaa - apparent matrix transit time
 umaa - apparent matrix volumetric cross section
+ur_lith - umaa-ro_maa-based lithology estimate
 '''
 
 def m(dt,dt_fl,den,den_fl):
@@ -75,3 +76,53 @@ def umaa(den, PEF, U_fl, phi_ND):
     '''
     umaa = ((PEF * den) - (phi_ND * U_fl))/(1-phi_ND)
     return umaa
+
+def ur_lith(umaa, romaa, **kwargs):
+    '''
+    ur_lith(umaa, romaa)
+    *Input parameters:
+    - umaa - apparent matrix volumetric cross section [barns/cm3]
+    - romaa - apparent matrix density [g/cc]
+    *It calculates and returns a tuple in the form of (ur_qtz, ur_cal, ur_dol) where:
+    - ur_qtz - volume of quartz (v/v)
+    - ur_cal - volume of calcite (v/v)
+    - ur_dol - volume of dolomite (v/v)
+    Solution after: Doveton, J.H. (1994), _Geologic Log Analysis Using Computer Methods_, 
+                    AAPG Computer Applications in Geology, No. 2
+    *Requires: NumPy for matrix inversion
+    '''
+    import numpy as np
+
+    qtz_roma = 2.65
+    cal_roma = 2.71
+    dol_roma = 2.87
+    qtz_uma = 4.80
+    cal_uma = 13.80
+    dol_uma = 9.00
+    unity = 1.00
+
+    inv = np.matrix([[qtz_roma, cal_roma, dol_roma],
+                     [qtz_uma, cal_uma, dol_uma],
+                     [unity, unity, unity]]).I
+
+    qtz = inv[0,0] * romaa + inv[0,1] * umaa + inv[0,2]
+    cal = inv[1,0] * romaa + inv[1,1] * umaa + inv[1,2]
+    dol = inv[2,0] * romaa + inv[2,1] * umaa + inv[2,2]
+    if qtz < 0.0:
+        qtz = 0.0
+    if qtz > 1.0:
+        qtz = 1.0
+    if cal < 0.0:
+        cal = 0.0
+    if cal > 1.0:
+        cal = 1.0
+    if dol < 0.0:
+        dol = 0.0
+    if dol > 1.0:
+        dol = 1.0
+    ur_qtz = qtz / (qtz + cal + dol)
+    ur_cal = cal / (qtz + cal + dol)
+    ur_dol = dol / (qtz + cal + dol)
+
+    return ur_qtz, ur_cal, ur_dol
+
